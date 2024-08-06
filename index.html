@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyseur YouTube Ultime - Statistiques et Tendances</title>
+    <meta name="description" content="Analysez en profondeur les vidéos et chaînes YouTube. Obtenez des statistiques détaillées, des tendances et des insights pour optimiser votre contenu.">
+    <meta name="keywords" content="YouTube, analyse, statistiques, vidéo, chaîne, tendances, engagement, SEO">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        h1, h2 {
+            color: #ff0000;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            display: block;
+            margin: 0 auto 20px;
+            max-width: 200px;
+        }
+        form {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #ff0000;
+            color: #fff;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #cc0000;
+        }
+        #results, #channel-results {
+            display: none;
+            background-color: #f0f0f0;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        canvas {
+            max-width: 100%;
+            margin-top: 20px;
+        }
+        .error {
+            color: #ff0000;
+            margin-top: 10px;
+            text-align: center;
+        }
+        #loading {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .thumbnail-container, .channel-image-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .thumbnail-container img, .channel-image-container img {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .download-links {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .download-links a {
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .hashtags, .keywords {
+            margin-top: 20px;
+            font-style: italic;
+        }
+        .channel-link {
+            margin-top: 10px;
+        }
+        .channel-link a {
+            color: #ff0000;
+            text-decoration: none;
+        }
+        .channel-link a:hover {
+            text-decoration: underline;
+        }
+        .stat {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .comments-section {
+            margin-top: 20px;
+        }
+        .comment {
+            background-color: #fff;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .positive {
+            border-left: 4px solid #4CAF50;
+        }
+        .negative {
+            border-left: 4px solid #f44336;
+        }
+        #warning {
+            background-color: #ffffd0;
+            border: 1px solid #e6db55;
+            padding: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/YouTube_Logo_2017.svg/1200px-YouTube_Logo_2017.svg.png" alt="YouTube Logo" class="logo">
+        <h1>Analyseur YouTube Ultime</h1>
+        <div id="warning">
+            ⚠️ Attention : Les statistiques affichées sont des estimations et peuvent ne pas refléter exactement les données réelles de YouTube.
+        </div>
+        <form id="youtube-form">
+            <input type="text" id="youtube-url" placeholder="Entrez l'URL d'une vidéo ou d'une chaîne YouTube" required>
+            <button type="submit">Analyser</button>
+        </form>
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="loading" style="display: none;">⏳ Chargement en cours...</div>
+        <div id="results">
+            <h2>Résultats de l'analyse de la vidéo</h2>
+            <p>🎥 Titre: <span id="video-title"></span></p>
+            <p>👀 Vues: <span id="video-views" class="stat"></span></p>
+            <p>👍 Likes: <span id="video-likes" class="stat"></span></p>
+            <p>💬 Commentaires: <span id="video-comments" class="stat"></span></p>
+            <p>🔄 Partages estimés: <span id="video-shares" class="stat"></span></p>
+            <p>📊 Taux d'engagement: <span id="engagement-rate" class="stat"></span></p>
+            <p>🎯 Taux de rétention estimé: <span id="retention-rate" class="stat"></span></p>
+            <p>🖱️ Taux de clic estimé: <span id="click-through-rate" class="stat"></span></p>
+            <p>⏱️ Durée de visionnage moyenne estimée: <span id="average-view-duration" class="stat"></span></p>
+            <p>💰 Estimation des revenus: <span id="estimated-revenue" class="stat"></span></p>
+            <p>🚀 Estimation du nombre d'abonnés gagnés: <span id="estimated-new-subscribers" class="stat"></span></p>
+            <p>📈 Estimation du nombre de vues par jour: <span id="estimated-views-per-day" class="stat"></span></p>
+            <div class="hashtags">#️⃣ Hashtags: <span id="video-hashtags"></span></div>
+            <div class="keywords">🔑 Mots-clés: <span id="video-keywords"></span></div>
+            <div class="channel-link">📺 Chaîne: <a id="channel-link" href="#" target="_blank"></a></div>
+            <canvas id="stats-chart"></canvas>
+            <div class="thumbnail-container">
+                <img id="video-thumbnail" src="" alt="Miniature de la vidéo">
+                <div class="download-links">
+                    <a id="download-default" href="#" download>Défaut</a>
+                    <a id="download-medium" href="#" download>Moyenne</a>
+                    <a id="download-high" href="#" download>Haute</a>
+                    <a id="download-standard" href="#" download>Standard</a>
+                    <a id="download-maxres" href="#" download>Max</a>
+                </div>
+            </div>
+            <div class="comments-section">
+                <h3>Commentaires</h3>
+                <div id="comments-container"></div>
+            </div>
+        </div>
+        <div id="channel-results">
+            <h2>Résultats de l'analyse de la chaîne</h2>
+            <p>📺 Nom de la chaîne: <span id="channel-title"></span></p>
+            <p>🧑‍🤝‍🧑 Nombre d'abonnés: <span id="subscriber-count" class="stat"></span></p>
+            <p>👀 Nombre total de vues: <span id="total-views" class="stat"></span></p>
+            <p>🎬 Nombre de vidéos: <span id="video-count" class="stat"></span></p>
+            <p>📊 Taux d'engagement moyen: <span id="channel-engagement-rate" class="stat"></span></p>
+            <p>💰 Estimation des revenus de la chaîne: <span id="channel-estimated-revenue" class="stat"></span></p>
+            <canvas id="channel-stats-chart"></canvas>
+            <div class="channel-image-container">
+                <h3>Photo de profil de la chaîne</h3>
+                <img id="channel-profile-image" src="" alt="Photo de profil de la chaîne">
+                <div class="download-links">
+                    <a id="download-profile-image" href="#" download>Télécharger</a>
+                </div>
+            </div>
+            <div class="channel-image-container">
+                <h3>Bannière de la chaîne</h3>
+                <img id="channel-banner-image" src="" alt="Bannière de la chaîne">
+                <div class="download-links">
+                    <a id="download-banner-image" href="#" download>Télécharger</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const API_KEY = 'AIzaSyAkF9xcoN9vd1xRKyWGDXIWyyfFOq_WbHE';
+    let statsChart = null;
+    let channelStatsChart = null;
+
+    function extractId(url) {
+        let id = null;
+        let type = null;
+
+        // Pour les vidéos (y compris les liens courts)
+        const videoRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const shortVideoRegExp = /^https?:\/\/youtu\.be\/([^\/\?]+)/;
+        const videoMatch = url.match(videoRegExp) || url.match(shortVideoRegExp);
+        if (videoMatch && (videoMatch[2]?.length == 11 || videoMatch[1]?.length == 11)) {
+            id = videoMatch[2] || videoMatch[1];
+            type = 'video';
+            return { id, type };
+        }
+
+        // Pour les chaînes
+        const channelRegExp = /^.*(youtube.com\/(c\/|channel\/|user\/|@))([^\?\&\/]+).*/;
+        const channelMatch = url.match(channelRegExp);
+        if (channelMatch && channelMatch[3]) {
+            id = channelMatch[3];
+            type = 'channel';
+            return { id, type };
+        }
+
+        return { id: null, type: null };
+    }
+
+    async function fetchData(id, type) {
+        let endpoint;
+        if (type === 'video') {
+            endpoint = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${id}&key=${API_KEY}`;
+        } else if (type === 'channel') {
+            endpoint = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,brandingSettings&id=${id}&key=${API_KEY}`;
+        } else {
+            throw new Error('Type non reconnu');
+        }
+
+        const response = await fetch(endpoint);
+        if (!response.ok) throw new Error('Erreur lors de la récupération des données');
+        const data = await response.json();
+        if (data.items.length === 0) throw new Error('Aucune donnée trouvée');
+        return data.items[0];
+    }
+
+    async function fetchComments(videoId) {
+        const endpoint = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&key=${API_KEY}&order=relevance&maxResults=20`;
+        const response = await fetch(endpoint);
+        if (!response.ok) throw new Error('Erreur lors de la récupération des commentaires');
+        const data = await response.json();
+        return data.items;
+    }
+
+    function displayVideoResults(data) {
+        const views = parseInt(data.statistics.viewCount);
+        const likes = parseInt(data.statistics.likeCount);
+        const comments = parseInt(data.statistics.commentCount);
+        const publishedAt = new Date(data.snippet.publishedAt);
+        const daysSincePublished = Math.ceil((new Date() - publishedAt) / (1000 * 60 * 60 * 24));
+
+        document.getElementById('video-title').textContent = data.snippet.title;
+        document.getElementById('video-views').textContent = views.toLocaleString();
+        document.getElementById('video-likes').textContent = likes.toLocaleString();
+        document.getElementById('video-comments').textContent = comments.toLocaleString();
+
+        // Estimation des partages (basé sur une hypothèse)
+        const estimatedShares = Math.round(views * 0.01);
+        document.getElementById('video-shares').textContent = estimatedShares.toLocaleString();
+
+        // Calcul du taux d'engagement
+        const engagementRate = ((likes + comments + estimatedShares) / views * 100).toFixed(2);
+        document.getElementById('engagement-rate').textContent = `${engagementRate}%`;
+
+        // Estimation du taux de rétention (basé sur une hypothèse)
+        const estimatedRetentionRate = (Math.random() * (0.7 - 0.3) + 0.3).toFixed(2);
+        document.getElementById('retention-rate').textContent = `${estimatedRetentionRate * 100}%`;
+
+                // Estimation du taux de clic (basé sur une hypothèse)
+        const estimatedCTR = (Math.random() * (0.2 - 0.05) + 0.05).toFixed(2);
+        document.getElementById('click-through-rate').textContent = `${estimatedCTR * 100}%`;
+
+        // Estimation de la durée de visionnage moyenne (basée sur une hypothèse)
+        const averageViewDuration = Math.round(views * 0.6); // 60% de la durée totale de la vidéo
+        const minutes = Math.floor(averageViewDuration / 60);
+        const seconds = averageViewDuration % 60;
+        document.getElementById('average-view-duration').textContent = `${minutes}m ${seconds}s`;
+
+        // Estimation des revenus (basé sur une hypothèse)
+        const estimatedRevenue = (views * 0.001).toFixed(2); // $1 pour 1000 vues
+        document.getElementById('estimated-revenue').textContent = `$${estimatedRevenue}`;
+
+        // Estimation du nombre d'abonnés gagnés (basé sur une hypothèse)
+        const estimatedNewSubscribers = Math.round(views * 0.01);
+        document.getElementById('estimated-new-subscribers').textContent = estimatedNewSubscribers.toLocaleString();
+
+        // Estimation du nombre de vues par jour
+        const estimatedViewsPerDay = Math.round(views / daysSincePublished);
+        document.getElementById('estimated-views-per-day').textContent = estimatedViewsPerDay.toLocaleString();
+
+        // Affichage des hashtags
+        const hashtags = data.snippet.tags ? data.snippet.tags.map(tag => `#${tag}`).join(' ') : 'Aucun hashtag trouvé';
+        document.getElementById('video-hashtags').textContent = hashtags;
+
+        // Extraction et affichage des mots-clés
+        const keywords = extractKeywords(data.snippet.title + ' ' + data.snippet.description);
+        document.getElementById('video-keywords').textContent = keywords.join(', ');
+
+        // Affichage du lien de la chaîne
+        const channelLink = document.getElementById('channel-link');
+        channelLink.href = `https://www.youtube.com/channel/${data.snippet.channelId}`;
+        channelLink.textContent = data.snippet.channelTitle;
+
+        // Création ou mise à jour du graphique
+        const ctx = document.getElementById('stats-chart').getContext('2d');
+        if (statsChart) {
+            statsChart.destroy();
+        }
+        statsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Vues', 'Likes', 'Commentaires', 'Partages estimés'],
+                datasets: [{
+                    label: 'Statistiques de la vidéo',
+                    data: [views, likes, comments, estimatedShares],
+                    backgroundColor: ['rgba(255, 99, 132, 0.5)', 'rgba(54, 162, 235, 0.5)', 'rgba(255, 206, 86, 0.5)', 'rgba(75, 192, 192, 0.5)']
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Affichage et téléchargement des miniatures
+        const thumbnails = data.snippet.thumbnails;
+        document.getElementById('video-thumbnail').src = thumbnails.high.url;
+
+        const downloadLinks = {
+            'download-default': thumbnails.default.url,
+            'download-medium': thumbnails.medium.url,
+            'download-high': thumbnails.high.url,
+            'download-standard': thumbnails.standard ? thumbnails.standard.url : null,
+            'download-maxres': thumbnails.maxres ? thumbnails.maxres.url : null
+        };
+
+        for (const [id, url] of Object.entries(downloadLinks)) {
+            const link = document.getElementById(id);
+            if (url) {
+                link.href = url;
+                link.style.display = 'inline-block';
+            } else {
+                link.style.display = 'none';
+            }
+        }
+
+        // Affichage des commentaires
+        fetchComments(data.id).then(comments => {
+            const commentsContainer = document.getElementById('comments-container');
+            commentsContainer.innerHTML = '';
+            comments.forEach(comment => {
+                const commentText = comment.snippet.topLevelComment.snippet.textDisplay;
+                const sentiment = analyzeSentiment(commentText);
+                const commentElement = document.createElement('div');
+                commentElement.className = `comment ${sentiment > 0 ? 'positive' : 'negative'}`;
+                commentElement.textContent = commentText;
+                commentsContainer.appendChild(commentElement);
+            });
+        });
+
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('channel-results').style.display = 'none';
+        document.getElementById('warning').style.display = 'block';
+    }
+
+    function displayChannelResults(data) {
+        document.getElementById('channel-title').textContent = data.snippet.title;
+        document.getElementById('subscriber-count').textContent = parseInt(data.statistics.subscriberCount).toLocaleString();
+        document.getElementById('total-views').textContent = parseInt(data.statistics.viewCount).toLocaleString();
+        document.getElementById('video-count').textContent = parseInt(data.statistics.videoCount).toLocaleString();
+
+        // Calcul du taux d'engagement moyen de la chaîne
+        const averageEngagementRate = (parseInt(data.statistics.subscriberCount) / parseInt(data.statistics.viewCount) * 100).toFixed(2);
+        document.getElementById('channel-engagement-rate').textContent = `${averageEngagementRate}%`;
+
+        // Estimation des revenus de la chaîne (basé sur une hypothèse)
+        const estimatedChannelRevenue = (parseInt(data.statistics.viewCount) * 0.001).toFixed(2); // $1 pour 1000 vues
+        document.getElementById('channel-estimated-revenue').textContent = `$${estimatedChannelRevenue}`;
+
+        // Création ou mise à jour du graphique de la chaîne
+        const ctx = document.getElementById('channel-stats-chart').getContext('2d');
+        if (channelStatsChart) {
+            channelStatsChart.destroy();
+        }
+        channelStatsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Abonnés', 'Vues totales', 'Vidéos'],
+                datasets: [{
+                    label: 'Statistiques de la chaîne',
+                    data: [data.statistics.subscriberCount, data.statistics.viewCount, data.statistics.videoCount],
+                    backgroundColor: ['rgba(255, 99, 132, 0.5)', 'rgba(54, 162, 235, 0.5)', 'rgba(255, 206, 86, 0.5)']
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Affichage et téléchargement de la photo de profil
+        const profileImage = data.snippet.thumbnails.high.url;
+        document.getElementById('channel-profile-image').src = profileImage;
+        document.getElementById('download-profile-image').href = profileImage;
+
+        // Affichage et téléchargement de la bannière
+        if (data.brandingSettings && data.brandingSettings.image && data.brandingSettings.image.bannerExternalUrl) {
+            const bannerImage = data.brandingSettings.image.bannerExternalUrl;
+            document.getElementById('channel-banner-image').src = bannerImage;
+            document.getElementById('download-banner-image').href = bannerImage;
+            document.getElementById('channel-banner-image').style.display = 'block';
+            document.getElementById('download-banner-image').style.display = 'inline-block';
+        } else {
+            document.getElementById('channel-banner-image').style.display = 'none';
+            document.getElementById('download-banner-image').style.display = 'none';
+        }
+
+        document.getElementById('channel-results').style.display = 'block';
+        document.getElementById('results').style.display = 'none';
+        document.getElementById('warning').style.display = 'block';
+    }
+
+    function extractKeywords(text) {
+        // Liste de mots vides en français
+        const stopWords = new Set(['le', 'la', 'les', 'un', 'une', 'des', 'et', 'ou', 'mais', 'donc', 'car', 'pour', 'dans', 'sur', 'avec', 'sans']);
+        
+        // Nettoyage et tokenisation du texte
+        const words = text.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/);
+        
+        // Filtrage des mots vides et comptage des occurrences
+        const wordCounts = {};
+        words.forEach(word => {
+            if (!stopWords.has(word) && word.length > 2) {
+                wordCounts[word] = (wordCounts[word] || 0) + 1;
+            }
+        });
+        
+        // Tri des mots par nombre d'occurrences
+        const sortedWords = Object.entries(wordCounts).sort((a, b) => b[1] - a[1]);
+        
+        // Retourne les 5 premiers mots-clés
+        return sortedWords.slice(0, 5).map(entry => entry[0]);
+    }
+
+    function analyzeSentiment(text) {
+        // Liste de mots positifs et négatifs (à étendre pour une meilleure précision)
+        const positiveWords = ['bon', 'super', 'génial', 'excellent', 'incroyable', 'aime', 'bravo'];
+        const negativeWords = ['mauvais', 'nul', 'terrible', 'horrible', 'déteste', 'décevant'];
+
+        let score = 0;
+        const words = text.toLowerCase().split(/\s+/);
+
+        words.forEach(word => {
+            if (positiveWords.includes(word)) score++;
+            if (negativeWords.includes(word)) score--;
+        });
+
+        return score;
+    }
+
+    document.getElementById('youtube-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const youtubeUrl = document.getElementById('youtube-url').value;
+        const { id, type } = extractId(youtubeUrl);
+        
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('error').style.display = 'none';
+        document.getElementById('warning').style.display = 'none';
+        document.getElementById('results').style.display = 'none';
+        document.getElementById('channel-results').style.display = 'none';
+
+        if (!id) {
+            document.getElementById('error').textContent = 'URL YouTube invalide. Veuillez entrer une URL de vidéo ou de chaîne YouTube valide.';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('loading').style.display = 'none';
+            return;
+        }
+
+        try {
+            const data = await fetchData(id, type);
+            if (type === 'video') {
+                displayVideoResults(data);
+            } else if (type === 'channel') {
+                displayChannelResults(data);
+            }
+        } catch (error) {
+            let errorMessage = 'Une erreur s\'est produite lors de la récupération des données.';
+            if (error.message === 'Aucune donnée trouvée') {
+                errorMessage = 'Aucune donnée n\'a été trouvée pour cette URL. Veuillez vérifier que la vidéo ou la chaîne existe et qu\'elle n\'est pas privée.';
+            }
+            document.getElementById('error').textContent = errorMessage;
+            document.getElementById('error').style.display = 'block';
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
+    });
+    </script>
+</body>
+</html>
