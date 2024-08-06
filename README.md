@@ -1,4 +1,4 @@
-# Analyseur YouTube Ultime - Statistiques et Tendances
+# Analyseur YouTube Ultime : Obtenez des Statistiques Complète et 100% Gratuit 
 
 Ce projet est un outil d'analyse de vidéos et de chaînes YouTube, permettant d'obtenir des statistiques détaillées, des tendances, et des insights pour optimiser votre contenu.
 
